@@ -1,0 +1,689 @@
+{
+  "name": "Checkpoint 4 - Integraciones (Gmail, HubSpot, Slack)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "ANTES DE ACTIVAR: 1) Conectar Gmail, HubSpot y Slack con OAuth2 (o token en HubSpot) y verificar el semáforo verde. 2) Reemplazar CHANNEL_ID_SLACK por el ID del canal de operaciones. 3) Probar cada nodo con Execute step antes de publicar.",
+        "height": 150,
+        "width": 560,
+        "color": 4
+      },
+      "id": "f8797623-e42b-485f-a049-d9e0a8f79fff",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "id": "6001a404-47e8-4025-82b6-a118d3769c98",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        464
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4P0iXGz81lnLRn2l",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ar1",
+              "leftValue": "={{ $json.subject }}",
+              "rightValue": "noreply",
+              "operator": {
+                "type": "string",
+                "operation": "contains",
+                "caseSensitive": false
+              }
+            },
+            {
+              "id": "ar2",
+              "leftValue": "={{ $json.subject }}",
+              "rightValue": "Out of office",
+              "operator": {
+                "type": "string",
+                "operation": "contains",
+                "caseSensitive": false
+              }
+            },
+            {
+              "id": "ar3",
+              "leftValue": "={{ $json.subject }}",
+              "rightValue": "Undeliverable",
+              "operator": {
+                "type": "string",
+                "operation": "contains",
+                "caseSensitive": false
+              }
+            },
+            {
+              "id": "ar4",
+              "leftValue": "={{ $json.from.value[0].address }}",
+              "rightValue": "noreply@",
+              "operator": {
+                "type": "string",
+                "operation": "contains",
+                "caseSensitive": false
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "025669ad-0ed7-4e7d-a005-f2246a809125",
+      "name": "IF Auto-reply",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "from",
+              "value": "={{ $json.from.value[0].address }}",
+              "type": "string"
+            },
+            {
+              "id": "s2",
+              "name": "subject",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "s3",
+              "name": "bodyText",
+              "value": "={{ ($json.text || '').slice(0, 2000) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e23495f2-873a-408f-8d49-2a6954200db9",
+      "name": "Set Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ev1",
+              "leftValue": "={{ $json.from }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "56bf8d68-a404-4bc3-9af2-1551f428f989",
+      "name": "IF Email Valido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "search",
+        "limit": 1,
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "email",
+                    "value": "={{ $json.from }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "id": "51dc9377-f6b0-4f04-873a-731321cae7c5",
+      "name": "HubSpot Look up",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.1,
+      "position": [
+        928,
+        592
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "NfiQMLs7Ewzxcm7Q",
+          "name": "HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "ce1",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fa9fffd4-b68c-4656-b6ab-38c91510ccb3",
+      "name": "IF Contacto Existe",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "create"
+      },
+      "id": "52ea82de-bd3b-41cb-8308-d1f2e12b77f2",
+      "name": "HubSpot Create",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.1,
+      "position": [
+        1408,
+        704
+      ],
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "NfiQMLs7Ewzxcm7Q",
+          "name": "HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1",
+              "name": "to",
+              "value": "={{ $('Set Payload').item.json.from }}",
+              "type": "string"
+            },
+            {
+              "id": "d2",
+              "name": "subject",
+              "value": "=Re: {{ $('Set Payload').item.json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "d3",
+              "name": "body",
+              "value": "REVISAR Y APROBAR ANTES DE ENVIAR. Respuesta sugerida por el agente.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "939bd02d-e775-4ac5-9614-c1bb97251894",
+      "name": "Preparar Borrador",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1648,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "options": {
+          "sendTo": "={{ $('Gmail Trigger').item.json.from.value[0].address }}"
+        }
+      },
+      "id": "bb974d3e-35c6-4799-8e7e-dac937d45365",
+      "name": "Gmail Create Draft",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1888,
+        592
+      ],
+      "webhookId": "319405ac-4905-4243-ba4e-a09d918f7570",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4P0iXGz81lnLRn2l",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BUB3XJ1H7",
+          "mode": "list",
+          "cachedResultName": "general-checkpoint4"
+        },
+        "text": "=Nuevo borrador para revisar. Remitente: {{ $('Set Payload').item.json.from }}. Asunto: {{ $('Set Payload').item.json.subject }}",
+        "otherOptions": {}
+      },
+      "id": "17cfcb94-a4ef-47e3-b6f3-6a7e43da8aa8",
+      "name": "Slack Notificar",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        2352,
+        592
+      ],
+      "webhookId": "9c01fb00-3861-47a3-828d-758ecfb842e6",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "5mt7af5ia3hQlEEs",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BUB3XJ1H7",
+          "mode": "list",
+          "cachedResultName": "general-checkpoint4"
+        },
+        "text": "=Correo descartado: el remitente no es válido. Asunto: {{ $json.subject }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        864,
+        752
+      ],
+      "id": "8e8f8ddb-990f-4a3b-a983-20bd0b6f65a8",
+      "name": "Slack Descartado Remitente.",
+      "webhookId": "dbd94318-fcca-4aa8-9f6e-f6f2a57ccc03",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "5mt7af5ia3hQlEEs",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0CBACQ0H8E",
+          "mode": "list",
+          "cachedResultName": "nuevo-canal"
+        },
+        "text": "=Auto-respuesta descartada. Asunto: {{ $json.subject }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        464,
+        368
+      ],
+      "id": "c48e2032-c5e5-47d9-8c2a-66f11beacf51",
+      "name": "Slack Descartado Auto-reply",
+      "webhookId": "f9827b4b-33f7-49e3-ac7f-982117e7dcd2",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "5mt7af5ia3hQlEEs",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a309aea3-4891-4496-800f-8fe1af022c1f",
+              "name": "TO",
+              "value": "={{ $('Preparar Borrador').item.json.to }}",
+              "type": "string"
+            },
+            {
+              "id": "1b795014-1bf1-45fc-95c5-b6c844e5ba37",
+              "name": "subject",
+              "value": "={{ $('Set Payload').item.json.subject }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2112,
+        608
+      ],
+      "id": "2ca3f7db-f93b-47bb-95ce-01b42ed86716",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {
+    "Gmail Trigger": [
+      {
+        "json": {
+          "id": "1a164563238cf326",
+          "threadId": "1a1645619832fc67",
+          "labelIds": [
+            "UNREAD",
+            "CATEGORY_PERSONAL",
+            "INBOX"
+          ],
+          "sizeEstimate": 12515,
+          "headers": {
+            "delivered-to": "Delivered-To: nahuelyairrimoli@gmail.com",
+            "received": "Received: from MN2PR13MB2637.namprd13.prod.outlook.com\r\n ([fe80::a2df:4da0:b08a:940f]) by MN2PR13MB2637.namprd13.prod.outlook.com\r\n ([fe80::a2df:4da0:b08a:940f%7]) with mapi id 15.21.0496.020; Thu, 22 Oct 2026\r\n 15:58:50 +0000",
+            "x-received": "X-Received: by 2002:a05:6a21:8cc2:b0:3e2:6ee4:a751 with SMTP id adf61e73a8af0-3e287f35ffbmr5150814637.60.1792684733249;\r\n        Thu, 22 Oct 2026 08:58:53 -0700 (PDT)",
+            "arc-seal": "ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;\r\n b=lqrJTWlPAgWjXVfrEJJSAXLRo3d5YmdgwOIW8rOEat4ULG8pp3qDxFj05mYDBayCiaqERXGriu8nNXYb6tDD2NkgJ6NSYlNUMiDfuaZK72tiiY4Y2GgKKL4SrvLVl2IhddlESrqn/m0z6My0Z84zl4Jzz0M4aTvxf7m7WYt9x4sGr5dDVs1S2EMcGGmosSz0j+eHaXu7YS/zJPHVDSrW7/6r+jjJh6lw3gXlLbr2JKZJYyVvARrBuFspOCLVT6dWIIdei1GK1XDsz+XjlW0xAALJy9h2/kaEDvXWdL6faeZ8M6GRH7uXptGQKfmXCLxTkbWE3uxSloi0fH/AOht2dg==",
+            "arc-message-signature": "ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;\r\n s=arcselector10001;\r\n h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;\r\n bh=09Ng5BmTAYIBVzJX5/OjM/KXQMi2/M5RvaZkDHx32yE=;\r\n b=AJI46dERtf3yu12VcnRfW01i7j7cc++yJmlZvDwJhfrJ9OPj+CWRdPZ1ktjTjV8oV3BVOcurGuVmPzCSYvD1uR5HOcO1EF0XzFdK3iDyfqY3UfKJ4ErQabgNTjyHjXWzmk6N2zSKFYini6xn03syWnMHehyrLQiqJ5ATxNAAkOFP4mZMnSITTAT/k0dTO6kp2U/w8Rvr8h2MDfDT9OOyf1IKPvvqddp46b1H5j2AYKH2O5aVdiZLkHkWhN7YktH6xI0PjIUMTM4N2pzZGMbtu1aR3LMa0aTtbzK/o2DbkWTkco5jFWTHrnkH4EE4POqARmeTU7gDJm4hHnUcigweGA==",
+            "arc-authentication-results": "ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass\r\n smtp.mailfrom=roemmers.com.ar; dmarc=pass action=none\r\n header.from=roemmers.com.ar; dkim=pass header.d=roemmers.com.ar; arc=none",
+            "return-path": "Return-Path: <nrimoli@roemmers.com.ar>",
+            "received-spf": "Received-SPF: pass (google.com: domain of nrimoli@roemmers.com.ar designates 2a01:111:f403:c10d::1 as permitted sender) client-ip=2a01:111:f403:c10d::1;",
+            "authentication-results": "authentication-results: mx.microsoft.com 1; dkim=none (message not signed)\r\n header.d=none;dmarc=none action=none header.from=roemmers.com.ar;",
+            "dkim-signature": "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n d=portalcorp.onmicrosoft.com; s=selector2-portalcorp-onmicrosoft-com;\r\n h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;\r\n bh=09Ng5BmTAYIBVzJX5/OjM/KXQMi2/M5RvaZkDHx32yE=;\r\n b=CSM+7K/jpoJo1MvqCVNIPYl4zMcn8cYDMCUqUJ81ebsxiGr64FygFhNfcbkPSiHcMvyDefkrI7gnU5YZQuiUQW36g2lIhKb21hmTs5GgDLWyJafMKoDacM0rBmnpI32mqa12IUVVLZcJR8rt0rDmJcnaDBIZLeMv7lw5PQRPW1c=",
+            "from": "From: Nahuel Rimoli <nrimoli@roemmers.com.ar>",
+            "to": "To: Nahuel Yair Rimoli <nahuelyairrimoli@gmail.com>",
+            "subject": "Subject: HOLA",
+            "thread-topic": "Thread-Topic: HOLA",
+            "thread-index": "Thread-Index: AQHdYj46eyENCAQPfUGmaBh6oJjATg==",
+            "date": "Date: Thu, 22 Oct 2026 15:58:50 +0000",
+            "message-id": "Message-ID:\r\n <MN2PR13MB26374717A2B8E79F15F9241AE6652@MN2PR13MB2637.namprd13.prod.outlook.com>",
+            "accept-language": "Accept-Language: es-ES, es-MX, en-US",
+            "content-language": "Content-Language: es-ES",
+            "x-ms-has-attach": "X-MS-Has-Attach:",
+            "x-ms-tnef-correlator": "X-MS-TNEF-Correlator:",
+            "msip_labels": "msip_labels:",
+            "x-ms-publictraffictype": "x-ms-publictraffictype: Email",
+            "x-ms-traffictypediagnostic": "x-ms-traffictypediagnostic: MN2PR13MB2637:EE_|IA2PR13MB6702:EE_",
+            "x-ms-office365-filtering-correlation-id": "x-ms-office365-filtering-correlation-id: 035f0db9-e153-493b-56b0-08df30555d14",
+            "x-ms-exchange-senderadcheck": "x-ms-exchange-senderadcheck: 1",
+            "x-ms-exchange-antispam-relay": "x-ms-exchange-antispam-relay: 0",
+            "x-microsoft-antispam": "x-microsoft-antispam:\r\n BCL:0;ARA:13230040|376014|366016|23010399003|1800799024|11063799006|38070700021|56012099006|18002099003|10067099003|8096899003;",
+            "x-microsoft-antispam-message-info": "x-microsoft-antispam-message-info:\r\n qcD53I9/yR5h2xN+u7ewLzQ+jJb3YsjPdVVhtVWy3ZwxlfGYKuAECkMo8O4jVZHLv+jFS2f5+11S1cZ6QnwlrzJrrBNHDsebobgqHLqD7tUYfg3CqYuTQpxi3vDuT9Job//WlBu+d81WQxK4SPhXL8DLJPLqUjRe6RquBKY4h9wo+1xYL0n3AVEQdzW0OarBiYrEG8UqSra0U1C+PakANWz+WaIMTLjd0WGxjAfZtg1xRvnX+WN0q/GP896fphbb/ghAUDcdFl9cR7fHtYfN2hTbjco8ou+mQhqYdodsElRzsjfFdadOex+ZoFzlLLimMsuCdvO/QDg0DWidL4xqBiaHXMPTQmo9UZ3EOhhU9dIzUMCsdyAgIdo43kWEvUCj7OjjXYiAlrqqmAiFDQx4kRFWH0cqhhXyGBnpaBy66pA0VV7kIfn7AswSTU5PYdt1ejFpF/FGLKO0hwvMXjpzaXu6e7I4LRFA/OdqytpfacqBSKBmcMN4Tb/y923Ca0oIfqFIz0IjMpG7+crsCNiL1e9ffdt8nOEc8iWJUmMaqZ4vDVMhxY863+Rp8YjL53Zhz+Oc/d9ifnsvnylNhkizbu1xmXLkrbNYCO1vZBPDG1bn1kW3HGJa7Bx/O7uf/t5izuj6a3aDg6YmxPfc0rn4umO/12nNaMhCnl+hHXU1o6F+8s+GTOB3YJbhHqvMC/UEwpoOnQKrX4+urU9gQfKb+3CLw1YreAENEJktWOS0AMk=",
+            "x-forefront-antispam-report": "x-forefront-antispam-report:\r\n CIP:255.255.255.255;CTRY:;LANG:es;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:MN2PR13MB2637.namprd13.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230040)(376014)(366016)(23010399003)(1800799024)(11063799006)(38070700021)(56012099006)(18002099003)(10067099003)(8096899003);DIR:OUT;SFP:1102;",
+            "x-ms-exchange-antispam-messagedata-chunkcount": "x-ms-exchange-antispam-messagedata-chunkcount: 1",
+            "x-ms-exchange-antispam-messagedata-0": "x-ms-exchange-antispam-messagedata-0:\r\n =?iso-8859-1?Q?ZpNgt0goIDBm/PDXI6PdFVfHaCaqzENHGtKdjHBq2erFvr9I/tZa2sZkjR?=\r\n =?iso-8859-1?Q?ZmerI/BaRCrNehRz3N7QUGaFgY+uxUpouAESUMeH5a4be7DQdKAONLllU3?=\r\n =?iso-8859-1?Q?1cJ1JLUiNxtkUZftOqvDlORizEh58QTAtONyg2w4UTpGdSlfJwLU2+J1lY?=\r\n =?iso-8859-1?Q?6pjj6VU21ShqZ1LKSAwz3LZy/e/2ZBb3Fu1KJJ9cC6M4t+5y1TCuKArmM+?=\r\n =?iso-8859-1?Q?JQ9oDLT6Vme4NAv8TEQpEg0rtnLjeQBRGBQs5xM1Gu7ofDJmpqqf6elpxl?=\r\n =?iso-8859-1?Q?G4DXXXr5OEQDMJ6lP9eDSvlTiy9OL97uY0CzMVATm0rvHxOE3ppjSvG9Sn?=\r\n =?iso-8859-1?Q?U95dY4vTOypFuAfra56dPTHvhJQF6QYEs5sB5W+NA6deNf4Ca0BGxbwbuY?=\r\n =?iso-8859-1?Q?iiiX4iQZ7nBEE+NgVOsJVl4v/3VKZBE07rM9eLsdhoFlq05Ijb4QHBeHZT?=\r\n =?iso-8859-1?Q?sYmGox70/cyaRgeNK18POF9n3EIhi4G2SFtONeuNzHH37KDj4zrRB5zeEU?=\r\n =?iso-8859-1?Q?VSnSX7VFg45qR9C/7CX45qY3ewpprX8wUhoZI47r3K1XAtA1zlsWDk3Twg?=\r\n =?iso-8859-1?Q?IDKW7QzlktSgi8EnKUcP8nGsukXdzak+t3GBKZ0H1fuxRj9lUcogi+/Zpw?=\r\n =?iso-8859-1?Q?NweDIMqoDBk68F029hs9w5LJ6RPlD5dwIIq103BEZ/OkkrrkuQR9PK7e1V?=\r\n =?iso-8859-1?Q?oHKT7Bn3XCEOgpYSwjYMPER18uCvuycpJbUoBuf6zGFjlu/uENnMOk0xiw?=\r\n =?iso-8859-1?Q?L/bLHl6MwcdE7xc3hXrS5gWC/BYNOnK3aB3tl6zUvyCeTtYmownKLFgSoj?=\r\n =?iso-8859-1?Q?bdVV++cJfqM2Nj9ehrGHTtP9FtcZ6/pD5incRo2GxjqSiZYWDFaim80FiD?=\r\n =?iso-8859-1?Q?hTByPCeS3rjsKda366fHy/yi0Fp/j3iHv4maeAL31Z80/6tbNqDaCeswJt?=\r\n =?iso-8859-1?Q?tBQovrttP7B0zJICuqV/hwr44j5dtu+ii6Jzkw5UInJsDoYcWHxWFM/2vp?=\r\n =?iso-8859-1?Q?T4qPPhBh8wHdBasBvj1os9WSFvpNj/KgWAbtCKU2ATbJ23PsT/udneZMmB?=\r\n =?iso-8859-1?Q?9WqbsKgsvB0kY1IgG+p+G9KJOtway1kpv9RsAIpXwoFA6AJMCpTuSF1ilf?=\r\n =?iso-8859-1?Q?tvwZ+oJ/1DesEtgat8VC5HNVsjul5JBTD1OC9ohMmE+hIWAOYotgMzGMbc?=\r\n =?iso-8859-1?Q?5rTNelusIIoQ3eM+t94czPt+7ejJF+2D8CdXXL8Q1hPbweqL+6HkgWbt09?=\r\n =?iso-8859-1?Q?JhM8WUqPwuGejykYUVYDtAMU7SoMylQa1om2DgoSX44HL9xoP+JfiAL7MB?=\r\n =?iso-8859-1?Q?accd7xrFCrTb02kZ6bIwg3Qg5D75wqICWhs6J6MQEDF8X7hioka8Mj6IDK?=\r\n =?iso-8859-1?Q?HnKh2kWS0daw8cdpGlw8D4Gx5ReKBAaPgaAdmNYIt5Qkc5g6P2t3h0ywjT?=\r\n =?iso-8859-1?Q?azUv7IrE/VxGJYz+FqfmKcA6nwaIft7HPRlUwRNRMGlL439QI9VPJEkY5M?=\r\n =?iso-8859-1?Q?ZfO0yY/oFQQ+GNWFnqWlCcpob11lP9sTQjOR02Y+uCsip8brsuU/Lyql2A?=\r\n =?iso-8859-1?Q?yK8lVgF7gRX4JBr+TRjdytyr2RBFaJxPzLavcWH7qIeqJNHZUW6IjkUufA?=\r\n =?iso-8859-1?Q?5ntF1bKT9fnIlPwxbfAcuOnPPNxi32jXd3VQkcv9YxhtoPEM6o6FSH+pUi?=\r\n =?iso-8859-1?Q?2zHyv96ogDR0vWF81O3hBuzzYfLSRtKUqti0O99xa7DplZ/W/IY3So6T6p?=\r\n =?iso-8859-1?Q?7IpggoEwBw5HjowaJZ+0dCeZypf/h7CurVFUtcPW/tY1GZUaY2Gj284/ZN?=\r\n =?iso-8859-1?Q?pbop5TyFMQ=3D=3D?=",
+            "content-type": "Content-Type: multipart/alternative;\r\n\tboundary=\"_000_MN2PR13MB26374717A2B8E79F15F9241AE6652MN2PR13MB2637namp_\"",
+            "mime-version": "MIME-Version: 1.0",
+            "x-originatororg": "X-OriginatorOrg: roemmers.com.ar",
+            "x-ms-exchange-crosstenant-authas": "X-MS-Exchange-CrossTenant-AuthAs: Internal",
+            "x-ms-exchange-crosstenant-authsource": "X-MS-Exchange-CrossTenant-AuthSource: MN2PR13MB2637.namprd13.prod.outlook.com",
+            "x-ms-exchange-crosstenant-network-message-id": "X-MS-Exchange-CrossTenant-Network-Message-Id: 035f0db9-e153-493b-56b0-08df30555d14",
+            "x-ms-exchange-crosstenant-originalarrivaltime": "X-MS-Exchange-CrossTenant-originalarrivaltime: 22 Oct 2026 15:58:50.1775\r\n (UTC)",
+            "x-ms-exchange-crosstenant-fromentityheader": "X-MS-Exchange-CrossTenant-fromentityheader: Hosted",
+            "x-ms-exchange-crosstenant-id": "X-MS-Exchange-CrossTenant-id: 1748daec-496f-499f-92d1-e1ff0d8f5631",
+            "x-ms-exchange-crosstenant-mailboxtype": "X-MS-Exchange-CrossTenant-mailboxtype: HOSTED",
+            "x-ms-exchange-crosstenant-userprincipalname": "X-MS-Exchange-CrossTenant-userprincipalname: zpPqPSbp46Sd6BTlXXMLFVr1wVtCWgMtb/LH99nqjkZ6MQ/n14js6pqhW6ZwbfJqm86qiACxVyt/pRQuXwBjtg==",
+            "x-ms-exchange-transport-crosstenantheadersstamped": "X-MS-Exchange-Transport-CrossTenantHeadersStamped: IA2PR13MB6702"
+          },
+          "html": "<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">\n<style type=\"text/css\" style=\"display:none;\"> P {margin-top:0;margin-bottom:0;} </style>\n</head>\n<body dir=\"ltr\">\n<div style=\"font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 11pt; color: rgb(0, 0, 0);\" class=\"elementToProof\">\n<br>\n</div>\n<div id=\"Signature\" class=\"elementToProof\">\n<div style=\"font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 11pt; color: rgb(0, 0, 0);\">\n<br>\n</div>\n<div style=\"font-family: &quot;Times New Roman&quot;, serif; font-size: 12pt; color: rgb(31, 73, 125);\">\n<span class=\"spanWithBackgroundColor\" style=\"background-color: rgb(255, 255, 255);\"><b>Ing. Nahuel Yair Rimoli</b><br>\nControl de Calidad<br>\nRoemmers S.A.I.C.F</span></div>\n<div style=\"font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 11pt; color: rgb(0, 0, 0);\">\n<br>\n</div>\n</div>\n</body>\n</html>\n",
+          "text": "\n\nIng. Nahuel Yair Rimoli\nControl de Calidad\nRoemmers S.A.I.C.F\n\n",
+          "textAsHtml": "<p>Ing. Nahuel Yair Rimoli<br/>Control de Calidad<br/>Roemmers S.A.I.C.F</p>",
+          "subject": "HOLA",
+          "date": "2026-10-22T15:58:50.000Z",
+          "to": {
+            "value": [
+              {
+                "address": "nahuelyairrimoli@gmail.com",
+                "name": "Nahuel Yair Rimoli"
+              }
+            ],
+            "html": "<span class=\"mp_address_group\"><span class=\"mp_address_name\">Nahuel Yair Rimoli</span> &lt;<a href=\"mailto:nahuelyairrimoli@gmail.com\" class=\"mp_address_email\">nahuelyairrimoli@gmail.com</a>&gt;</span>",
+            "text": "\"Nahuel Yair Rimoli\" <nahuelyairrimoli@gmail.com>"
+          },
+          "from": {
+            "value": [
+              {
+                "address": "nrimoli@roemmers.com.ar",
+                "name": "Nahuel Rimoli"
+              }
+            ],
+            "html": "<span class=\"mp_address_group\"><span class=\"mp_address_name\">Nahuel Rimoli</span> &lt;<a href=\"mailto:nrimoli@roemmers.com.ar\" class=\"mp_address_email\">nrimoli@roemmers.com.ar</a>&gt;</span>",
+            "text": "\"Nahuel Rimoli\" <nrimoli@roemmers.com.ar>"
+          },
+          "messageId": "<MN2PR13MB26374717A2B8E79F15F9241AE6652@MN2PR13MB2637.namprd13.prod.outlook.com>"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "IF Auto-reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Auto-reply": {
+      "main": [
+        [
+          {
+            "node": "Slack Descartado Auto-reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Payload": {
+      "main": [
+        [
+          {
+            "node": "IF Email Valido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Email Valido": {
+      "main": [
+        [
+          {
+            "node": "HubSpot Look up",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack Descartado Remitente.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot Look up": {
+      "main": [
+        [
+          {
+            "node": "IF Contacto Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Contacto Existe": {
+      "main": [
+        [
+          {
+            "node": "Preparar Borrador",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HubSpot Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot Create": {
+      "main": [
+        [
+          {
+            "node": "Preparar Borrador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Borrador": {
+      "main": [
+        [
+          {
+            "node": "Gmail Create Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Create Draft": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Slack Notificar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7f7c82e0-db1d-403c-ad09-12307619a087",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6edf575c7f751424792621e4b22ba0ce0cb94cba7210ea9618f286cc655f1934"
+  },
+  "nodeGroups": [],
+  "id": "LZFanRvLkYQQ0bZp",
+  "tags": []
+}
